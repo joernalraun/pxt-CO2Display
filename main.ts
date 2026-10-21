@@ -81,16 +81,17 @@ function setupArc(): void {
 
 function drawArc(ppm: number): void {
     const level = Math.round(Math.constrain((ppm - PPM_MIN) / (PPM_MAX - PPM_MIN), 0, 1) * 255)
-    const f = ssd1331.frame
     for (let i = 0; i < ringIdx.length; i++) {
         const p = ringPos[i]
         let c = 0
         if (ppm > 0 && p <= level) c = bright[p]
         else if (ringEdge[i]) c = dim[p]
         else continue
-        const j = ringIdx[i] * 2
-        f[j] = c >> 8
-        f[j + 1] = c & 0xFF
+        const b = Math.idiv(ringIdx[i], ssd1331.BAND_PIXELS)
+        const band = ssd1331.bands[b]
+        const j = (ringIdx[i] - b * ssd1331.BAND_PIXELS) * 2
+        band[j] = c >> 8
+        band[j + 1] = c & 0xFF
     }
 }
 
