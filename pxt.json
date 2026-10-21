@@ -1,6 +1,6 @@
 {
     "name": "CO2-Display",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "CO2, Temperatur und Luftfeuchtigkeit (SCD40) auf dem Farb-OLED SSD1331",
     "dependencies": {
         "core": "*",
