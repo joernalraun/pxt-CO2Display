@@ -1,0 +1,19 @@
+{
+    "name": "CO2-Display",
+    "version": "0.1.0",
+    "description": "CO2, Temperatur und Luftfeuchtigkeit (SCD40) auf dem Farb-OLED SSD1331",
+    "dependencies": {
+        "core": "*",
+        "v3": "*",
+        "CO2-Sensor-SCD40": "github:calliope-edu/CO2-Sensor-SCD40#073d0f0a361c4ddf1318fec92c7472511515a37b"
+    },
+    "files": [
+        "main.ts",
+        "ssd1331.ts",
+        "README.md"
+    ],
+    "supportedTargets": [
+        "calliopemini"
+    ],
+    "preferredEditor": "tsprj"
+}
