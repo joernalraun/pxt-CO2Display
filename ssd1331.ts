@@ -18,8 +18,13 @@ namespace ssd1331 {
     const MISO = DigitalPin.C14
     const SCK = DigitalPin.C13
 
-    // RGB565, 2 Bytes pro Pixel (High-Byte zuerst), zeilenweise
-    export const frame = pins.createBuffer(WIDTH * HEIGHT * 2)
+    // Bildpuffer: RGB565, 2 Bytes pro Pixel (High-Byte zuerst), zeilenweise.
+    // Aufgeteilt in Streifen zu je 8 Zeilen, denn ein einzelner 12-KB-Puffer
+    // ist für die Speicherverwaltung zu groß (Fehler 022).
+    export const BAND = 8
+    export const BAND_PIXELS = WIDTH * BAND
+    export const bands: Buffer[] = []
+    for (let b = 0; b < HEIGHT / BAND; b++) bands.push(pins.createBuffer(BAND_PIXELS * 2))
 
     const INIT = [
         0xAE,        // Display aus
@@ -86,7 +91,7 @@ namespace ssd1331 {
      * Löscht den Bildpuffer (schwarz).
      */
     export function clear(): void {
-        frame.fill(0)
+        for (const band of bands) band.fill(0)
     }
 
     /**
@@ -94,9 +99,10 @@ namespace ssd1331 {
      */
     export function setPixel(x: number, y: number, c: number): void {
         if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return
-        const i = (y * WIDTH + x) * 2
-        frame[i] = c >> 8
-        frame[i + 1] = c & 0xFF
+        const band = bands[Math.idiv(y, BAND)]
+        const i = ((y % BAND) * WIDTH + x) * 2
+        band[i] = c >> 8
+        band[i + 1] = c & 0xFF
     }
 
     /**
@@ -110,10 +116,11 @@ namespace ssd1331 {
         const hi = c >> 8
         const lo = c & 0xFF
         for (let yy = y; yy < y + h; yy++) {
-            let i = (yy * WIDTH + x) * 2
+            const band = bands[Math.idiv(yy, BAND)]
+            let i = ((yy % BAND) * WIDTH + x) * 2
             for (let xx = 0; xx < w; xx++) {
-                frame[i] = hi
-                frame[i + 1] = lo
+                band[i] = hi
+                band[i + 1] = lo
                 i += 2
             }
         }
@@ -126,7 +133,7 @@ namespace ssd1331 {
         command([0x15, 0, WIDTH - 1, 0x75, 0, HEIGHT - 1])
         pins.digitalWritePin(DC, 1)
         pins.digitalWritePin(CS, 0)
-        pins.spiTransfer(frame, null)
+        for (const band of bands) pins.spiTransfer(band, null)
         pins.digitalWritePin(CS, 1)
     }
 }
