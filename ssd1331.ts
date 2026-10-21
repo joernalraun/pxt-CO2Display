@@ -21,33 +21,12 @@ namespace ssd1331 {
     // Bildpuffer: RGB565, 2 Bytes pro Pixel (High-Byte zuerst), zeilenweise.
     // Aufgeteilt in Streifen zu je 8 Zeilen, denn ein einzelner 12-KB-Puffer
     // ist für die Speicherverwaltung zu groß (Fehler 022).
+    // Die Puffer werden erst in clear() angelegt: Liegt dieser Treiber in einer
+    // eigenen Datei hinter main.ts, läuft main.ts zuerst und Variablen hier
+    // wären noch nicht belegt.
     export const BAND = 8
-    export const BAND_PIXELS = WIDTH * BAND
-    export const bands: Buffer[] = []
-    for (let b = 0; b < HEIGHT / BAND; b++) bands.push(pins.createBuffer(BAND_PIXELS * 2))
-
-    const INIT = [
-        0xAE,        // Display aus
-        0xA0, 0x72,  // Remap: 65k Farben, RGB
-        0xA1, 0x00,  // Startzeile
-        0xA2, 0x00,  // Offset
-        0xA4,        // normale Anzeige
-        0xA8, 0x3F,  // Multiplex 1/64
-        0xAD, 0x8E,  // Master-Konfiguration
-        0xB0, 0x0B,  // Stromsparen aus
-        0xB1, 0x31,  // Phasenlänge
-        0xB3, 0xF0,  // Taktteiler
-        0x8A, 0x64,  // Precharge A
-        0x8B, 0x78,  // Precharge B
-        0x8C, 0x64,  // Precharge C
-        0xBB, 0x3A,  // Precharge-Spannung
-        0xBE, 0x3E,  // VCOMH
-        0x87, 0x06,  // Master-Strom
-        0x81, 0x91,  // Kontrast A (blau)
-        0x82, 0x50,  // Kontrast B (grün)
-        0x83, 0x7D,  // Kontrast C (rot)
-        0xAF         // Display an
-    ]
+    export const BAND_PIXELS = 768  // WIDTH * BAND
+    export let bands: Buffer[]
 
     function command(bytes: number[]): void {
         const buf = pins.createBuffer(bytes.length)
@@ -72,7 +51,29 @@ namespace ssd1331 {
         basic.pause(10)
         pins.digitalWritePin(RES, 1)
         basic.pause(10)
-        for (const c of INIT) command([c])
+        const commands = [
+            0xAE,        // Display aus
+            0xA0, 0x72,  // Remap: 65k Farben, RGB
+            0xA1, 0x00,  // Startzeile
+            0xA2, 0x00,  // Offset
+            0xA4,        // normale Anzeige
+            0xA8, 0x3F,  // Multiplex 1/64
+            0xAD, 0x8E,  // Master-Konfiguration
+            0xB0, 0x0B,  // Stromsparen aus
+            0xB1, 0x31,  // Phasenlänge
+            0xB3, 0xF0,  // Taktteiler
+            0x8A, 0x64,  // Precharge A
+            0x8B, 0x78,  // Precharge B
+            0x8C, 0x64,  // Precharge C
+            0xBB, 0x3A,  // Precharge-Spannung
+            0xBE, 0x3E,  // VCOMH
+            0x87, 0x06,  // Master-Strom
+            0x81, 0x91,  // Kontrast A (blau)
+            0x82, 0x50,  // Kontrast B (grün)
+            0x83, 0x7D,  // Kontrast C (rot)
+            0xAF         // Display an
+        ]
+        for (const c of commands) command([c])
         clear()
         show()
     }
@@ -91,6 +92,10 @@ namespace ssd1331 {
      * Löscht den Bildpuffer (schwarz).
      */
     export function clear(): void {
+        if (!bands) {
+            bands = []
+            for (let b = 0; b < HEIGHT / BAND; b++) bands.push(pins.createBuffer(BAND_PIXELS * 2))
+        }
         for (const band of bands) band.fill(0)
     }
 
